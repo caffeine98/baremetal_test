@@ -17,6 +17,7 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
 
 /* Bit manipulation macros 
 #define SET_BIT(reg, pos) do { ((reg) |= (1U << (pos))) } while(0);
@@ -67,6 +68,7 @@ static inline void gpio_set_mode(gpio* port, uint8_t pin, gpio_modes mode) {
 static inline void gpio_set_mode(uint16_t pin, gpio_modes mode) {
     gpio* gpio_port = GPIO(PIN_PORT(pin));
     uint8_t pin_number = PIN_NUMBER(pin);
+    
 
     uint32_t shift = 2U * pin_number;  // Each pin is 2 bits wide
     uint32_t reg = gpio_port->MODER;
@@ -77,6 +79,67 @@ static inline void gpio_set_mode(uint16_t pin, gpio_modes mode) {
     gpio_port->MODER = reg;
 }
 
+// Reset and control clock (RCC) structure
+typedef struct rcc {
+    volatile uint32_t RCC_CR;
+    volatile uint32_t RCC_PLLCFGR;
+    volatile uint32_t RCC_CFGR;
+    volatile uint32_t RCC_CIR;
+    volatile uint32_t RCC_AHB1RSTR;
+    volatile uint32_t RCC_AHB2RSTR;
+    volatile uint32_t RCC_AHB3RSTR;
+    volatile uint32_t RCC_RESERVED_0x1C;
+    volatile uint32_t RCC_APB1RSTR;
+    volatile uint32_t RCC_APB2RSTR;
+    volatile uint32_t RCC_RESERVED_0x28;
+    volatile uint32_t RCC_RESERVED_0x2C;
+    volatile uint32_t RCC_AHB1ENR;
+    volatile uint32_t RCC_AHB2ENR;
+    volatile uint32_t RCC_AHB3ENR;
+    volatile uint32_t RCC_RESERVED_0x3C;
+    volatile uint32_t RCC_APB1ENR;
+    volatile uint32_t RCC_APB2ENR;
+    volatile uint32_t RCC_RESERVED_0x48;
+    volatile uint32_t RCC_RESERVED_0x4C;
+    volatile uint32_t RCC_AHB1LPENR;
+    volatile uint32_t RCC_AHB2LPENR;
+    volatile uint32_t RCC_AHB3LPENR;
+    volatile uint32_t RCC_RESERVED_0x5C;
+    volatile uint32_t RCC_APB1LPENR;
+    volatile uint32_t RCC_APB2LPENR;
+    volatile uint32_t RCC_RESERVED_0x68;
+    volatile uint32_t RCC_RESERVED_0x6C;
+    volatile uint32_t RCC_BDCR;
+    volatile uint32_t RCC_CSR;
+    volatile uint32_t RCC_RESERVED_0x78;
+    volatile uint32_t RCC_RESERVED_0x7C;
+    volatile uint32_t RCC_SSCGR;
+    volatile uint32_t RCC_PLLI2SCFGR;
+    volatile uint32_t RCC_PLLSAICFGR;
+    volatile uint32_t RCC_DCKCFGR;
+    volatile uint32_t RCC_CKGATENR;
+    volatile uint32_t RCC_DCKCFGR2;
+} rcc;
+
+#define RCC ((rcc*) (0x40023800))
+
+// GPIO write with set reset
+static inline gpio_write(uint16_t pin, bool is_enabled, gpio_modes mode) {
+    gpio* gpio_port = GPIO(PIN_PORT(pin));
+    gpio_port->BSRR = is_enabled;
+}
+
+static inline void delay(volatile uint32_t t) {
+    while(t--) { asm('nop'); }
+}
+
+// Startup code
+
+__attribute__((naked, noreturn)) void _reset(void) {
+    for(;;) {
+        (void)0;
+    }
+}
 
 int main(void)
 {
